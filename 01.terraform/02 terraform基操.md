@@ -208,3 +208,7 @@ terraform-example   3/3     3            3           39s
 - **terraform taint 资源打污点先删除资源在创建资源**
 - **terraform untaint 取消污点**
 - **terraform validate 验证语法是否错误**
+------------------------------------
+**关注不迷路，不定期分享devops相关技术文章**
+
+![](../public/img/11.png)
