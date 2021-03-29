@@ -2,6 +2,11 @@
 - 同一个项目(创建一个nginx的pod) 
 - 同一个kubernetes 
 - 不同namespaces
+## 文档和代码地址
+1. 工作目录 
+    https://github.com/Michael754267513/devops/tree/main/01.terraform/terraform%20for%20kubernetes/multi_namespace_project
+2. 文档路径：
+    https://github.com/Michael754267513/devops/blob/main/01.terraform/04%20terraform%20workspace.md
 
 
 ## 核心实现
@@ -251,3 +256,8 @@ Switched to workspace "default".
 [root@allinone ns]# terraform workspace delete prj1
 Deleted workspace "prj1"!
 ```
+
+------------------------------------
+**关注不迷路，不定期分享devops相关技术文章**
+
+![](../public/img/11.png) ![](../public/img/12.jpg)
