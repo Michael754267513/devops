@@ -4,8 +4,10 @@
 - 不同namespaces
 ## 文档和代码地址
 1. 工作目录 
+
     https://github.com/Michael754267513/devops/tree/main/01.terraform/terraform%20for%20kubernetes/multi_namespace_project
-2. 文档路径：
+2. 文档路径
+    
     https://github.com/Michael754267513/devops/blob/main/01.terraform/04%20terraform%20workspace.md
 
 
@@ -109,7 +111,7 @@ output "all-ns" {
 
 
 ```
-- ariables.tf
+- variables.tf
 ``` 
 variable "replicas" {
   default = 2
