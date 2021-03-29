@@ -4,7 +4,7 @@
 - 不同namespaces
 
 ## 核心实现
-- terraform env 命令来切换不通的化境
+- terraform env 命令来切换不同的化境
 
 ## demo应用 nginx
 - main.tf 文件
@@ -208,11 +208,5 @@ NAME                                 READY   STATUS    RESTARTS   AGE
 terraform-example-559dc4dd76-pjdr5   1/1     Running   0          4m24s
 terraform-example-559dc4dd76-thsjl   1/1     Running   0          4m24s
 ```
-- 注 demo 没有添加依赖,最好先定义下服务间的依赖 在deployment里面定义
-``` 
-  // 定义依赖的资源
-  depends_on = [
-    kubernetes_namespace.example,
-  ]
-```
+ 
 
