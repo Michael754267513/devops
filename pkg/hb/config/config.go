@@ -21,4 +21,4 @@ var Host = "api.huobi.pro"
 var AccessKey = "12c64c8c-7aaab2b1-b68c611b-ghxertfvbf"
 
 //var AccountId = "205422329"
-var AccountId = "22352995"
+var AccountId = "22352665"
