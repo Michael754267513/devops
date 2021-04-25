@@ -16,20 +16,12 @@ limitations under the License.
 
 package main
 
-import (
-	"github.com/Micahel754267513/pkg/cronjob"
-	"github.com/Micahel754267513/pkg/hb"
-	"github.com/robfig/cron/v3"
-)
-
 func main() {
-	hb.RunHB("doge")
-	hb.RunHB("bch3l")
-	hb.RunHB("pvt")
-	select {}
-}
+	c := client.MarketClient()
+	resp, err := c.GetLatestTrade("btcusdt")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(resp)
 
-func init() {
-	cronjob.J.C = cron.New(cron.WithSeconds())
-	cronjob.J.C.Start()
 }

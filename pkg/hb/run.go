@@ -14,22 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package hb
 
 import (
+	"fmt"
 	"github.com/Micahel754267513/pkg/cronjob"
-	"github.com/Micahel754267513/pkg/hb"
-	"github.com/robfig/cron/v3"
+	ai2 "github.com/Micahel754267513/pkg/hb/ai"
 )
 
-func main() {
-	hb.RunHB("doge")
-	hb.RunHB("bch3l")
-	hb.RunHB("pvt")
-	select {}
+func RunHB(ctype string) {
+	_, err := cronjob.J.AddCronJob(GetFunc(ctype), "* * * * * *")
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
-func init() {
-	cronjob.J.C = cron.New(cron.WithSeconds())
-	cronjob.J.C.Start()
+func GetFunc(ctype string) (f func()) {
+	var ai ai2.TradeCoins
+	ai.Coin = ctype
+	f = func() {
+		ai.Coin = ctype
+		ai.Init()
+	}
+
+	return
 }

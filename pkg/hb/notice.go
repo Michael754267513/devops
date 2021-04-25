@@ -14,22 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
-
-import (
-	"github.com/Micahel754267513/pkg/cronjob"
-	"github.com/Micahel754267513/pkg/hb"
-	"github.com/robfig/cron/v3"
-)
-
-func main() {
-	hb.RunHB("doge")
-	hb.RunHB("bch3l")
-	hb.RunHB("pvt")
-	select {}
-}
-
-func init() {
-	cronjob.J.C = cron.New(cron.WithSeconds())
-	cronjob.J.C.Start()
-}
+package hb
