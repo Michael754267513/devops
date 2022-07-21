@@ -1,0 +1,147 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvc-nfs-jk
+  labels:
+    app: pvc-nfs-jk
+spec:
+  capacity:
+    storage: 200Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.148.180.101
+    path: "/opt/data/jenkins"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nfs-jk
+  namespace: devops
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Gi
+  selector:
+    matchLabels:
+      app: pvc-nfs-jk
+
+---
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins
+  namespace: devops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins
+  namespace: devops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: devops
+---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jenkins
+  name: jenkins
+  namespace: devops
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: jenkins
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: jenkins
+      containers:
+        - env:
+            - name: JAVA_OPTS
+              value: '-Xmx4096m -Xms4096m'
+          image: 'jenkinsci/blueocean'
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 1
+          name: jenkins
+          ports:
+            - containerPort: 50000
+              protocol: TCP
+            - containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 1
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: volume-image-0
+            - mountPath: /var/jenkins_home
+              name: volume-jenkins
+            - mountPath: /etc/localtime
+              name: volume-localtime
+      volumes:
+        - hostPath:
+            path: /var/run/docker.sock
+            type: ''
+          name: volume-image-0
+        - name: volume-jenkins
+          persistentVolumeClaim:
+            claimName: pvc-nfs-jk
+        - hostPath:
+            path: /etc/localtime
+            type: ''
+          name: volume-localtime
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: jenkins-svc
+  namespace: devops
+spec:
+  ports:
+    - name: jenkins-svc-8080-8080
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: jenkins-svc-50000-50000
+      port: 50000
+      protocol: TCP
+      targetPort: 50000
+  selector:
+    app: jenkins
