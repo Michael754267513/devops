@@ -1,0 +1,139 @@
+// Uses Declarative syntax to run commands inside a container.
+pipeline {
+    agent {
+        kubernetes {
+            // Rather than inline YAML, in a multibranch Pipeline you could use: yamlFile 'jenkins-pod.yaml'
+            // Or, to avoid YAML:
+            // containerTemplate {
+            //     name 'shell'
+            //     image 'ubuntu'
+            //     command 'sleep'
+            //     args 'infinity'
+            // }
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kubectl 
+    image: harbor.devops.hpay/base/kubectl:dev-k8s 
+    command:
+    - sleep
+    args:
+    - infinity  
+    
+  - name: maven 
+    image: harbor.devops.hpay/base/mvn@sha256:197e383a0ea0c16e4531a9872dd563ec506ce72192a351f07b78da821222e4fc
+    command:
+    - sleep
+    args:
+    - infinity   
+    volumeMounts:
+      - name: m2
+        mountPath: /tmp/.m2   
+    env:
+      - name: MAVEN_OPTS
+        value: "-Djava.awt.headless=true -Dmaven.repo.local=/tmp/.m2/repository"  
+    
+  - name: docker
+    image: harbor.devops.hpay/base/docker:19.03.13-dind
+    command:
+    - sleep
+    args:
+    - infinity
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    volumeMounts: 
+      - name: docker
+        mountPath: /var/run/docker.sock
+        readOnly: true  
+  volumes:
+    - name: m2
+      hostPath:
+        path: /ops/devops/jenkins/m2
+        type: Directory
+    - name: docker
+      hostPath:
+        path: /var/run/docker.sock
+          
+'''
+            // Can also wrap individual steps:
+            // container('shell') {
+            //     sh 'hostname'
+            // }
+            defaultContainer 'docker'
+        }
+    }
+    stages {
+        stage('maven') {
+ 
+            steps {
+                container('maven') {
+                sh '/usr/bin/mvn --version '}
+            }
+        }
+        stage('build') {
+            steps {
+                container('docker') {
+                sh 'docker ps '
+                }
+            }
+        }
+        stage('deploy') {
+            steps {
+                container('kubectl') {
+                sh '/bin/kubectl get ns '
+                }
+            }
+        }
+    post {
+        always {
+            echo 'always'
+            // deleteDir() /* clean up our workspace */
+        }
+        success {
+            echo 'I succeeeded!'
+            script {
+                 formatMsg.PrintMes('I succeeeded!',"red")
+                 tomail.Email("succeeeded","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+                
+            
+            
+        }
+        unstable {
+            echo 'I am unstable :/'
+            script { 
+                 tomail.Email("unstable","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+                
+        }
+        failure {
+            echo 'I failed :('
+            script { 
+                 tomail.Email("failure","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+            
+        }
+        changed {
+            echo 'Things were different before...'
+        }
+        aborted {
+            echo '喔霍取消了'
+            script { 
+                 tomail.Email("喔霍取消了","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+            
+        }
+        
+    }
+}

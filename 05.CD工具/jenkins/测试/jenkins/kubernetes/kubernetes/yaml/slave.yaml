@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kubectl 
+    image: harbor.devops.hpay/base/kubectl:dev-k8s
+    command:
+    - sleep
+    args:
+    - infinity    
+  - name: maven 
+    image: harbor.devops.hpay/base/mvn:dev-k8s
+    command:
+    - sleep
+    args:
+    - infinity  
+    volumeMounts:
+      - name: m2
+        mountPath: /tmp/.m2   
+    env:
+      - name: MAVEN_OPTS
+        value: "-Djava.awt.headless=true -Dmaven.repo.local=/tmp/.m2/repository"       
+  - name: docker
+    image: harbor.devops.hpay/base/docker:19.03.13-dind
+    command:
+    - sleep
+    args:
+    - infinity
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    volumeMounts: 
+      - name: docker
+        mountPath: /var/run/docker.sock
+        readOnly: true   
+  volumes:
+    - name: m2
+      hostPath:
+        path: /ops/devops/jenkins/m2
+        type: Directory
+    - name: docker
+      hostPath:
+        path: /var/run/docker.sock
