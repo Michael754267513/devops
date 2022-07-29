@@ -1,0 +1,113 @@
+@Library(value="handpay-library@master", changelog=true) _
+
+// def gitlabWebhook = new org.devops.gitlab()
+def formatMsg = new org.devops.tools()
+def gitlabWebhook= new org.devops.gitlab()
+def tomail= new org.devops.toemail()
+
+String branchName = "${env.branch}"
+
+branchName = branch - "refs/heads/"
+
+pipeline {
+  agent {
+    kubernetes {
+      defaultContainer 'maven'
+      yamlFile 'kubernetes/kubernetes/yaml/slave.yaml'
+    }
+  }
+  environment {
+        // harbor_url = 'https://harbor.devops.hpay'
+        DOCKER_USERNAME  =  "k8s"
+        DOCKER_PASSWORD = "k8123#@!"
+    }
+
+  options {
+        timeout(time: 1, unit: 'HOURS')
+        timestamps()
+    }
+
+  stages {
+    stage('获取代码') {
+        steps {
+             checkout([$class: 'GitSCM', branches: [[name: "${branchName}"]], extensions: [], userRemoteConfigs: [[credentialsId: 'gitlabuser', url: "${gitlabUrl}"]]])
+        }
+    }
+    stage('编译') {
+        steps {
+                container('maven') {
+                script {
+                    def version =  sh script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true
+                    def artifactId =  sh script: 'mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout', returnStdout: true
+                    def groupId =  sh script: 'mvn help:evaluate -Dexpression=project.groupId -q -DforceStdout', returnStdout: true
+                    def name =  sh script: 'mvn help:evaluate -Dexpression=project.name -q -DforceStdout', returnStdout: true
+                    echo "${version}-${groupId}-${artifactId}-${name}"
+                }
+                sh '/usr/bin/mvn clean install '
+                }
+            }
+    }
+    stage('上传Nexus') {
+        steps {
+                container('maven') {
+                script {
+                    def version =  sh script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true
+                    def artifactId =  sh script: 'mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout', returnStdout: true
+                    def groupId =  sh script: 'mvn help:evaluate -Dexpression=project.groupId -q -DforceStdout', returnStdout: true
+                    def name =  sh script: 'mvn help:evaluate -Dexpression=project.name -q -DforceStdout', returnStdout: true
+                    def packaging =  sh script: 'mvn help:evaluate -Dexpression=project.packaging -q -DforceStdout', returnStdout: true
+                    echo "${version}-${groupId}-${artifactId}-${name}.${packaging}"
+                    sh "mvn deploy:deploy-file -Dmaven.test.skip=true -Dfile=target/${name}-${version}.jar -DrepositoryId=handpay-snapshots -DgroupId=${groupId} -DartifactId=${artifactId} -Dversion=${version} -Dpackaging=${packaging} -Durl=http://mvnrep.handpay.com.cn:8081/nexus/content/repositories/handpay-snapshots"
+                }
+                sh '/usr/bin/mvn clean install '
+                }
+            }
+    }
+
+}
+    post {
+        always {
+            echo 'always'
+            // deleteDir() /* clean up our workspace */
+        }
+        success {
+            echo 'I succeeeded!'
+            script {
+                 formatMsg.PrintMes('I succeeeded!',"red")
+                 tomail.Email("succeeeded","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+
+
+
+        }
+        unstable {
+            echo 'I am unstable :/'
+            script {
+                 tomail.Email("unstable","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+
+        }
+        failure {
+            echo 'I failed :('
+            script {
+                 tomail.Email("failure","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+
+        }
+        changed {
+            echo 'Things were different before...'
+        }
+        aborted {
+            echo '喔霍取消了'
+            script {
+                 tomail.Email("喔霍取消了","${tomailsend}")
+                 //gitlabWebhook.ChangeCommitStatus("${project_id}","${commitSha}","success")
+            }
+
+        }
+     }
+
+}
